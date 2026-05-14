@@ -70,11 +70,13 @@ uacme -v -c /opt/etc/ssl/uacme -h /opt/share/uacme/uacme.sh issue anch665.my.to 
 * Ключ -y автоматически подтверждает challenge (необходимо для работы из cron).
 * После успешного обновления сертификата выполняется перезагрузка nginx.
 
-
 ## Примечания
 * Убедитесь, что nginx настроен на обслуживание каталога /.well-known/acme-challenge из CHALLENGE_PATH.
 * Внешний порт 80 должен быть проброшен на внутренний порт, который слушает nginx (например, 81).
 * При ручном запуске с -v вы увидите детальный вывод, включая пути к ключам и статус проверки.
+
+
+# WEB серверы
 
 ## nginx
 
@@ -86,7 +88,7 @@ opkg install ca-certificates nginx-ssl
 
 ### Конфигурация nginx
 * /opt/etc/nginx/nginx.conf
-```bash
+```nginx
 user nobody;
 worker_processes  1;
 
@@ -110,7 +112,7 @@ http {
 ```
 
 * /opt/etc/nginx/conf.d/anch665.my.to.conf
-```
+```nginx
 # HTTP-сервер на порту 81 (внешний 80)
 
 server {
@@ -156,3 +158,56 @@ server {
 }
 
 ```
+
+## lighttpd
+
+### Установка lighttpd
+```bash
+opkg update
+opkg install ca-certificates lighttpd lighttpd-mod-accesslog lighttpd-mod-cgi lighttpd-mod-openssl lighttpd-mod-redirect lighttpd-mod-rewrite lighttpd-mod-setenv
+```
+
+
+### Конфигурация lighttpd
+* создать каталог для конфига
+```bash mkdir -p /opt/share/www/gow```
+
+* создать конфиг
+* /opt/etc/lighttpd/conf.d/50-anch665.conf
+```nginx
+server.modules += ( "mod_redirect", "mod_openssl" )
+
+$SERVER["socket"] == ":81" {
+    # accesslog.filename = "/tmp/log/lighttpd/anch665-http.access.log"
+    # server.errorlog = "/tmp/log/lighttpd/anch665-http.error.log"
+
+    # --- Перенаправление всего, кроме .well-known ---
+    $HTTP["url"] !~ "^/\.well-known/acme-challenge/" {
+        url.redirect-code = 301
+        url.redirect = ( "^/(.*)" => "https://%{req.host}/$1" )
+    }
+}
+
+$SERVER["socket"] == ":443" {
+    accesslog.filename = "/tmp/log/lighttpd/anch665-https.access.log"
+    server.errorlog = "/tmp/log/lighttpd/anch665-https.error.log"
+
+    ssl.engine = "enable"
+    ssl.pemfile = "/opt/etc/lighttpd/anch665.pem"
+    ssl.cipher-list = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+    server.document-root = var.server_root + "/gow"
+
+    # Запрет доступа к .well-known: возвращаем 404
+    $HTTP["url"] =~ "^/\.well-known/acme-challenge/" {
+        url.rewrite-once = ( "^/.well-known/acme-challenge/.*" => "/nonexistent" )
+    }
+}
+```
+### Примечание, если используете lighttpd не забуьте изменить путь в CHALLENGE_PATH
+
+###  Автоматическое обновление сертификата (cron)
+Сертификат выдаётся на 90 дней. Чтобы не пропустить обновление, добавьте задание в cron (например, каждый 1-й день месяца в 3:00):
+```bash
+0 3 1 * * export CHALLENGE_PATH="/opt/share/www/gow/.well-known/acme-challenge" && /opt/sbin/uacme -c /opt/etc/ssl/uacme -h /opt/share/uacme/uacme.sh issue anch665.my.to anch665.root.sx && cat /opt/etc/ssl/uacme/anch665.my.to/cert.pem /opt/etc/ssl/uacme/private/anch665.my.to/key.pem > /opt/etc/lighttpd/anch665.pem && chmod 600 /opt/etc/lighttpd/anch665.pem && /opt/etc/init.d/S80lighttpd reconfigure
+```
+* В данном случае выпускаются сертификаты, собирается цепочка из сертификатов и релоадится lighttpd
