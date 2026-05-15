@@ -166,9 +166,12 @@ server {
 opkg update
 opkg install ca-certificates lighttpd lighttpd-mod-accesslog lighttpd-mod-cgi lighttpd-mod-openssl lighttpd-mod-redirect lighttpd-mod-rewrite lighttpd-mod-setenv
 ```
-
-
+<!--
+ 
 ### Конфигурация lighttpd
+> [!IMPORTANT]
+> Раздел в процессе доработки
+
 * создать каталог для конфига
 ```bash mkdir -p /opt/share/www/gow```
 
@@ -191,7 +194,7 @@ $SERVER["socket"] == ":81" {
 $SERVER["socket"] == ":443" {
     accesslog.filename = "/tmp/log/lighttpd/anch665-https.access.log"
     server.errorlog = "/tmp/log/lighttpd/anch665-https.error.log"
-
+    
     ssl.engine = "enable"
     ssl.pemfile = "/opt/etc/lighttpd/anch665.pem"
     ssl.cipher-list = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
@@ -211,3 +214,5 @@ $SERVER["socket"] == ":443" {
 0 3 1 * * export CHALLENGE_PATH="/opt/share/www/gow/.well-known/acme-challenge" && /opt/sbin/uacme -c /opt/etc/ssl/uacme -h /opt/share/uacme/uacme.sh issue anch665.my.to anch665.root.sx && cat /opt/etc/ssl/uacme/anch665.my.to/cert.pem /opt/etc/ssl/uacme/private/anch665.my.to/key.pem > /opt/etc/lighttpd/anch665.pem && chmod 600 /opt/etc/lighttpd/anch665.pem && /opt/etc/init.d/S80lighttpd reconfigure
 ```
 * В данном случае выпускаются сертификаты, собирается цепочка из сертификатов и релоадится lighttpd
+
+-->
