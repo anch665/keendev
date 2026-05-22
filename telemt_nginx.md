@@ -53,13 +53,6 @@ fake_cert_len = 2048
 # 0 = выключен, 1 = v1 (текстовый), 2 = v2 (бинарный).
 mask_proxy_protocol = 2
 
-#tls_domain = "anch665.my.to"
-#mask = true
-#tls_emulation = true
-#tls_front_dir = "tlsfront"
-#mask_host = "anch665.my.to"
-#mask_shape_hardening_aggressive_mode = true
-
 [access.users]
 
 test = "739fd28dd22b6dafc45bbb2df1fbfd58"
