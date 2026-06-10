@@ -1,5 +1,11 @@
 #!/bin/sh
 
+
+# скопировать содержимое скрипта в:
+# /opt/usr/bin/journalctl
+# выполнить:
+# chmod +x /opt/usr/bin/journalctl
+
 LOG_FILE="/opt/var/log/telemt.log"
 
 # Игнорируем все аргументы, просто выводим содержимое файла или tail -f
