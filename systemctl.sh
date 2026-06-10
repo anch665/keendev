@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# скопировать содержимое в:
+# скопировать содержимое скрипта в:
 # /opt/usr/bin/systemctl
+# выполнить:
 # chomd +x /opt/usr/bin/systemctl
 
 INIT_DIR="/opt/etc/init.d"
