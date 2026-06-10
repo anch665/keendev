@@ -134,9 +134,43 @@ delete_service() {
     esac
 }
 
+# Редактирует файл сервиса в редакторе по умолчанию
+edit_service() {
+    service_name="$1"
+    file=$(find_service_file "$service_name")
+    [ -z "$file" ] && { echo "Error: Service '$service_name' not found."; return 1; }
+
+    # Определяем редактор
+    EDITOR="${EDITOR:-vi}"
+    # Проверяем, существует ли редактор
+    if ! command -v "$EDITOR" >/dev/null 2>&1; then
+        echo "Error: Editor '$EDITOR' not found. Please set EDITOR environment variable to a valid editor."
+        return 1
+    fi
+
+    # Проверяем, доступен ли файл для чтения/записи
+    if [ ! -r "$file" ]; then
+        echo "Error: Cannot read file '$file'."
+        return 1
+    fi
+    if [ ! -w "$file" ]; then
+        echo "Warning: File '$file' is not writable. You might not be able to save changes."
+    fi
+
+    echo "Opening '$service_name' in $EDITOR..."
+    $EDITOR "$file"
+    exit_code=$?
+    if [ $exit_code -eq 0 ]; then
+        echo "Editing finished."
+    else
+        echo "Editor exited with code $exit_code."
+    fi
+    return $exit_code
+}
+
 # --- Основная логика ---
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 {start|stop|restart|status|enable|disable|delete|list} [service]"
+    echo "Usage: $0 {start|stop|restart|status|enable|disable|delete|edit|list} [service]"
     exit 1
 fi
 
@@ -148,12 +182,13 @@ case "$ACTION" in
         show_service_list
         exit 0
         ;;
-    enable|disable|delete)
+    enable|disable|delete|edit)
         [ -z "$SERVICE" ] && { echo "Error: Missing service name for $ACTION."; exit 1; }
         case "$ACTION" in
             enable)   enable_service "$SERVICE" ;;
             disable)  disable_service "$SERVICE" ;;
             delete)   delete_service "$SERVICE" ;;
+            edit)     edit_service "$SERVICE" ;;
         esac
         exit $?
         ;;
@@ -170,7 +205,7 @@ case "$ACTION" in
         exit $?
         ;;
     *)
-        echo "Error: Action '$ACTION' not supported. Use start, stop, restart, status, enable, disable, delete, or list."
+        echo "Error: Action '$ACTION' not supported. Use start, stop, restart, status, enable, disable, delete, edit, or list."
         exit 1
         ;;
 esac
