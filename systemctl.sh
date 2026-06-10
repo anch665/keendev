@@ -6,6 +6,7 @@
 # chomd +x /opt/usr/bin/systemctl
 
 INIT_DIR="/opt/etc/init.d"
+EDITOR="${EDITOR:-vim}"
 
 if [ ! -d "$INIT_DIR" ]; then
     echo "Error: Directory $INIT_DIR does not exist."
@@ -140,15 +141,11 @@ edit_service() {
     file=$(find_service_file "$service_name")
     [ -z "$file" ] && { echo "Error: Service '$service_name' not found."; return 1; }
 
-    # Определяем редактор
-    EDITOR="${EDITOR:-vi}"
-    # Проверяем, существует ли редактор
     if ! command -v "$EDITOR" >/dev/null 2>&1; then
         echo "Error: Editor '$EDITOR' not found. Please set EDITOR environment variable to a valid editor."
         return 1
     fi
 
-    # Проверяем, доступен ли файл для чтения/записи
     if [ ! -r "$file" ]; then
         echo "Error: Cannot read file '$file'."
         return 1
@@ -168,15 +165,34 @@ edit_service() {
     return $exit_code
 }
 
+# Выполняет произвольную команду над сервисом (проброс в init-скрипт)
+run_service_command() {
+    service_name="$1"
+    command="$2"
+    file=$(find_service_file "$service_name")
+    if [ -z "$file" ]; then
+        echo "Error: Unknown service '$service_name'."
+        show_service_list
+        return 1
+    fi
+    echo "Executing: $file $command"
+    $file "$command"
+    return $?
+}
+
 # --- Основная логика ---
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 {start|stop|restart|status|enable|disable|delete|edit|list} [service]"
+    echo "Usage: $0 {start|stop|restart|status|reload|...} [service]"
+    echo "       $0 {enable|disable|delete|edit} [service]"
+    echo "       $0 list"
     exit 1
 fi
 
 ACTION="$1"
 SERVICE="$2"
 
+# Список встроенных команд, которые НЕ являются действиями сервиса
+# (они обрабатываются самой обёрткой)
 case "$ACTION" in
     list)
         show_service_list
@@ -193,19 +209,19 @@ case "$ACTION" in
         exit $?
         ;;
     start|stop|restart|status)
+        # Эти команды также пробрасываются в сервис, но требуют имя
         [ -z "$SERVICE" ] && { echo "Error: Missing service name for $ACTION."; exit 1; }
-        INIT_SCRIPT=$(find_service_file "$SERVICE")
-        if [ -z "$INIT_SCRIPT" ]; then
-            echo "Error: Unknown service '$SERVICE'."
-            show_service_list
-            exit 1
-        fi
-        echo "Executing: $INIT_SCRIPT $ACTION"
-        $INIT_SCRIPT "$ACTION"
+        run_service_command "$SERVICE" "$ACTION"
         exit $?
         ;;
     *)
-        echo "Error: Action '$ACTION' not supported. Use start, stop, restart, status, enable, disable, delete, edit, or list."
-        exit 1
+        # Любая другая команда (reload, reopen, test, force-reload, ...)
+        # Считаем её командой сервиса. Требуем имя сервиса.
+        if [ -z "$SERVICE" ]; then
+            echo "Error: Missing service name for command '$ACTION'."
+            exit 1
+        fi
+        run_service_command "$SERVICE" "$ACTION"
+        exit $?
         ;;
 esac
