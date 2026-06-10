@@ -3,7 +3,7 @@
 # скопировать содержимое скрипта в:
 # /opt/usr/bin/systemctl
 # выполнить:
-# chomd +x /opt/usr/bin/systemctl
+# chmod +x /opt/usr/bin/systemctl
 
 INIT_DIR="/opt/etc/init.d"
 EDITOR="${EDITOR:-vim}"
@@ -107,7 +107,7 @@ disable_service() {
         || { echo "Error: Failed to disable service '$service_name'."; return 1; }
 }
 
-# Удаляет сервис (файл)
+# Удаляет сервис (файл) с предварительной остановкой
 delete_service() {
     service_name="$1"
     file=$(find_service_file "$service_name")
@@ -119,6 +119,14 @@ delete_service() {
     read -r answer
     case "$answer" in
         y|Y)
+            # Останавливаем сервис перед удалением
+            echo "Stopping service '$service_name'..."
+            run_service_command "$service_name" "stop"
+            stop_exit=$?
+            if [ $stop_exit -ne 0 ]; then
+                echo "Warning: Service stop returned code $stop_exit, but continuing with deletion."
+            fi
+
             rm -f "$file"
             if [ $? -eq 0 ]; then
                 echo "Service '$service_name' deleted successfully."
@@ -191,8 +199,6 @@ fi
 ACTION="$1"
 SERVICE="$2"
 
-# Список встроенных команд, которые НЕ являются действиями сервиса
-# (они обрабатываются самой обёрткой)
 case "$ACTION" in
     list)
         show_service_list
@@ -209,14 +215,11 @@ case "$ACTION" in
         exit $?
         ;;
     start|stop|restart|status)
-        # Эти команды также пробрасываются в сервис, но требуют имя
         [ -z "$SERVICE" ] && { echo "Error: Missing service name for $ACTION."; exit 1; }
         run_service_command "$SERVICE" "$ACTION"
         exit $?
         ;;
     *)
-        # Любая другая команда (reload, reopen, test, force-reload, ...)
-        # Считаем её командой сервиса. Требуем имя сервиса.
         if [ -z "$SERVICE" ]; then
             echo "Error: Missing service name for command '$ACTION'."
             exit 1
