@@ -1,0 +1,51 @@
+#!/bin/sh
+
+ENABLED=yes
+PROCS=telemt
+LOG_FILE="/opt/var/log/telemt.log"
+
+if [ -n "$LOG_FILE" ]; then
+    ARGS="--log-file $LOG_FILE -d /opt/etc/$PROCS/config.toml"
+else
+    ARGS="-d /opt/etc/$PROCS/config.toml"
+fi
+
+PREARGS=""
+DESC="Telemt MTProxy"
+PATH=/opt/sbin:/opt/bin:/opt/usr/sbin:/opt/usr/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+. /opt/etc/init.d/rc.func
+
+status() {
+    if [ -f "/var/run/${PROCS}.pid" ]; then
+        pid=$(cat "/var/run/${PROCS}.pid" 2>/dev/null)
+        if kill -0 "$pid" 2>/dev/null; then
+            echo -n " Checking $DESC... alive."
+        else
+            echo -n " Checking $DESC... dead."
+        fi
+    else
+        echo -n " Checking $DESC... dead."
+    fi
+
+    # Если лог-файл включён, выводим его путь
+    if [ -n "$LOG_FILE" ]; then
+        echo " Log file: $LOG_FILE"
+    else
+        echo
+    fi
+}
+
+case "$1" in
+    status)
+        status
+        ;;
+    *)
+        if command -v "$1" >/dev/null 2>&1; then
+            "$1"
+        else
+            echo "Usage: $0 {start|stop|restart|reload|status|check}"
+            exit 1
+        fi
+        ;;
+esac
