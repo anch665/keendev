@@ -1,4 +1,9 @@
 #!/opt/bin/sh
+# Скопировать содержимое в файл 
+# /opt/etc/ndm/wan.d/030-rostelecom.sh
+# выполнить:
+# chmod +x /opt/etc/ndm/wan.d/030-rostelecom.sh
+
 
 IP_PATTERN="^(10\.|100\.6[4-9]\.|100\.[7-9][0-9]\.|100\.1[01][0-9]\.|100\.12[0-7]\.|172\.1[6-9]\.|172\.2[0-9]\.|172\.3[01]\.|46\.158\.|null)"
 CONFIG_FILE="/opt/etc/restart_wan.conf"
