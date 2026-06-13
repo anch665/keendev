@@ -40,12 +40,13 @@ case "$1" in
     status)
         status
         ;;
+    start|stop|restart|reload|check)
+        # Эти команды уже успешно выполнены файлом rc.func выше.
+        # Просто завершаем скрипт без ошибки.
+        exit 0
+        ;;
     *)
-        if command -v "$1" >/dev/null 2>&1; then
-            "$1"
-        else
-            echo "Usage: $0 {start|stop|restart|reload|status|check}"
-            exit 1
-        fi
+        echo "Usage: $0 {start|stop|restart|reload|status|check}"
+        exit 1
         ;;
 esac
