@@ -5,69 +5,115 @@
 
 * https://freedns.afraid.org/menu/
 
-```yaml
-[general]
-#fast_mode = true
-use_middle_proxy = false
-#use_middle_proxy = true
 
-# Ограничения / валидация: "debug", "verbose", "normal", или "silent".
-log_level = "silent"
+```yaml
+#https://github.com/telemt/telemt/blob/main/docs/Config_params/CONFIG_PARAMS.ru.md
+[general]
+use_middle_proxy = false
+log_level = "silent" # "debug", "verbose", "normal", or "silent"
 upstream_connect_failfast_hard_errors = false
 beobachten_file = "/tmp/cache/beobachten.txt"
-ad_tag = "d3d7ceea02edf14cfbfe0f06639ed9b9"
+beobachten = true
+beobachten_minutes = 10
+beobachten_flush_secs = 15
+tg_connect = 30
 
+[general.modes]
+#classic = true
+#secure = true
+tls = true
+      
 [general.links]
-public_host = "mydomen.afraid.org"
+show = "*"
+public_host = "*.my.to"
 public_port = 443
+
+[timeouts]
+client_handshake = 120
+client_keepalive = 90
 
 [server]
 port = 2443
 metrics_port = 9090
-#metrics_whitelist = ["127.0.0.1/32", "::1/128", "0.0.0.0/0"]
-#metrics_whitelist = ["0.0.0.0/0"]
-metrics_whitelist = ["192.168.0.0/19"]
+metrics_whitelist = [ "192.168.0.0/19", "127.0.0.1/32" ]
 metrics_listen = "192.168.1.1:9090"
 # включить proxy_protocol для nginx
 proxy_protocol = true
+proxy_protocol_header_timeout_ms = 1000
+max_connections = 10000
 
 [server.api]
 enabled = true
 listen = "127.0.0.1:9091"
 whitelist = [ "127.0.0.1/32", "::1/128" ]
-minimal_runtime_enabled = true
-minimal_runtime_cache_ttl_ms = 1000
+#minimal_runtime_enabled = true
+#minimal_runtime_cache_ttl_ms = 1000
 read_only = false
-auth_header = "31594ca6c3c6e109b14c13acec8a6f0116566312833625710cbd1042cad841c3"
+auth_header = "*"
+runtime_edge_enabled = true
+runtime_edge_top_n = 50
 
 [[server.listeners]]
 ip = "127.0.0.1"
+port = 2443
+announce = "*.my.to"
+synlimit = false
 
 [censorship]
-tls_domain = "mydomen.afraid.org"
+tls_domain = "*.my.to"
+unknown_sni_action = "mask"
 mask = true
 mask_port = 8443
 mask_host = "127.0.0.1"
-fake_cert_len = 2048
+#fake_cert_len = 2048
 # включить mask_proxy_protocol для nginx
 # 0 = выключен, 1 = v1 (текстовый), 2 = v2 (бинарный).
-mask_proxy_protocol = 2
+mask_proxy_protocol = 1
+tls_emulation = true
+mask_timing_normalization_enabled = true
+mask_timing_normalization_floor_ms = 180
+mask_timing_normalization_ceiling_ms = 320
 
+
+[censorship.tls_fetch]
+attempt_timeout_ms = 5000
+
+[access]
+
+[access.user_max_tcp_conns]
+user = 10
 [access.users]
-
-test = "739fd28dd22b6dafc45bbb2df1fbfd58"
-[[upstreams]]
-type = "direct"
-# Указываем интерфейс который сомотрит в интернет здорового человека
-interface = "nwg0"
+user = "*"
 
 
 [access.user_max_unique_ips]
-test = 10
+user = 2
 
-[access.user_max_tcp_conns]
-test = 100
+[access.user_data_quota]
+user = 10000000000
+
+[[upstreams]]
+type = "direct"
+weight = 1
+# Указываем интерфейс который сомотрит в интернет здорового человека
+interface = "nwg3"
+#enabled = false
+
+[[upstreams]]
+type = "direct"
+weight = 2
+# Указываем интерфейс который сомотрит в интернет здорового человека
+interface = "t2s0"
+#enabled = false
+
+[[upstreams]]
+type = "direct"
+weight = 3
+# Указываем интерфейс который сомотрит в интернет здорового человека
+#interface = "nwg1"
+interface = "opkgtun10"
 ```
+
 
 ## Nginx
 ```nginx
