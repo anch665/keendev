@@ -7,6 +7,7 @@ opkg install mlocate
 ## Настройка
 ### Первичная настройка, добавление групп и установка прав
 ```bash
+addgroup mlocate
 chgrp mlocate /opt/var/mlocate
 chmod g=rx,o= /opt/var/mlocate
 chgrp mlocate /opt/bin/locate
