@@ -1,4 +1,3 @@
-~ # cat .profile
 #!/bin/sh
 #set -x
 . /opt/etc/profile
